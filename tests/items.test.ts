@@ -4,6 +4,8 @@ import {
   listActivities,
   createActivity,
   moveActivity,
+  updateActivity,
+  deleteActivity,
 } from '../src/projects/items.js';
 import { createMockGql } from './helpers.js';
 
@@ -206,5 +208,47 @@ describe('moveActivity', () => {
       fieldId: 'f_priority',
       optionId: 'o_low',
     });
+  });
+});
+
+describe('updateActivity', () => {
+  it('updates title and body via updateProjectV2DraftIssue', async () => {
+    const gql = createMockGql([
+      { match: /projectV2\(number/, respond: () => ({ viewer: { projectV2: { id: 'PVT_12', number: 12, title: 'Alpha' } } }) },
+      {
+        match: /node\(id/,
+        respond: () => ({ node: { content: { id: 'draft_1' } } }),
+      },
+      {
+        match: /updateProjectV2DraftIssue/,
+        respond: () => ({ updateProjectV2DraftIssue: { draftIssue: { id: 'draft_1', title: 'Design UI', body: 'new notes' } } }),
+      },
+    ]);
+
+    await updateActivity(gql, 12, 'item_1', { title: 'Design UI', description: 'new notes' });
+
+    const updateCall = gql.calls.find((c) => /updateProjectV2DraftIssue/.test(c.query));
+    expect(updateCall?.vars).toEqual({
+      draftIssueId: 'draft_1',
+      title: 'Design UI',
+      body: 'new notes',
+    });
+  });
+});
+
+describe('deleteActivity', () => {
+  it('deletes the item from the project', async () => {
+    const gql = createMockGql([
+      { match: /projectV2\(number/, respond: () => ({ viewer: { projectV2: { id: 'PVT_12', number: 12, title: 'Alpha' } } }) },
+      {
+        match: /deleteProjectV2Item/,
+        respond: () => ({ deleteProjectV2Item: { deletedItemId: 'item_1' } }),
+      },
+    ]);
+
+    await deleteActivity(gql, 12, 'item_1');
+
+    const deleteCall = gql.calls.find((c) => /deleteProjectV2Item/.test(c.query));
+    expect(deleteCall?.vars).toEqual({ projectId: 'PVT_12', itemId: 'item_1' });
   });
 });

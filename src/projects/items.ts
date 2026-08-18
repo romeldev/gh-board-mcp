@@ -177,3 +177,74 @@ async function setFieldValue(
 ): Promise<void> {
   await gql(UPDATE_FIELD_VALUE, { projectId, itemId, fieldId, optionId });
 }
+
+const GET_ITEM_CONTENT = `
+  query GetItemContent($itemId: ID!) {
+    node(id: $itemId) {
+      ... on ProjectV2Item {
+        content {
+          ... on DraftIssue {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
+
+const UPDATE_DRAFT = `
+  mutation UpdateDraft($draftIssueId: ID!, $title: String, $body: String) {
+    updateProjectV2DraftIssue(input: {
+      draftIssueId: $draftIssueId
+      title: $title
+      body: $body
+    }) {
+      draftIssue {
+        id
+        title
+        body
+      }
+    }
+  }
+`;
+
+const DELETE_ITEM = `
+  mutation DeleteItem($projectId: ID!, $itemId: ID!) {
+    deleteProjectV2Item(input: {
+      projectId: $projectId
+      itemId: $itemId
+    }) {
+      deletedItemId
+    }
+  }
+`;
+
+export async function updateActivity(
+  gql: GraphqlClient,
+  number: number,
+  itemId: string,
+  changes: { title?: string; description?: string },
+): Promise<void> {
+  await resolveProject(gql, number);
+
+  const contentData = await gql(GET_ITEM_CONTENT, { itemId });
+  const draftIssueId: string = contentData.node?.content?.id;
+  if (!draftIssueId) {
+    throw new Error(`Item ${itemId} is not a draft issue`);
+  }
+
+  await gql(UPDATE_DRAFT, {
+    draftIssueId,
+    title: changes.title ?? null,
+    body: changes.description ?? null,
+  });
+}
+
+export async function deleteActivity(
+  gql: GraphqlClient,
+  number: number,
+  itemId: string,
+): Promise<void> {
+  const project = await resolveProject(gql, number);
+  await gql(DELETE_ITEM, { projectId: project.id, itemId });
+}
