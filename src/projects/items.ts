@@ -206,12 +206,8 @@ const GET_ITEM_CONTENT = `
 `;
 
 const UPDATE_DRAFT = `
-  mutation UpdateDraft($draftIssueId: ID!, $title: String, $body: String) {
-    updateProjectV2DraftIssue(input: {
-      draftIssueId: $draftIssueId
-      title: $title
-      body: $body
-    }) {
+  mutation UpdateDraft($input: UpdateProjectV2DraftIssueInput!) {
+    updateProjectV2DraftIssue(input: $input) {
       draftIssue {
         id
         title
@@ -246,11 +242,14 @@ export async function updateActivity(
     throw new Error(`Item ${itemId} is not a draft issue`);
   }
 
-  await gql(UPDATE_DRAFT, {
-    draftIssueId,
-    title: changes.title ?? null,
-    body: changes.description ?? null,
-  });
+  // Build the input with only the fields being changed. Sending `null` for an
+  // unset field makes GitHub CLEAR it (live-verified data-loss bug), so unset
+  // keys must be omitted rather than nulled.
+  const input: { draftIssueId: string; title?: string; body?: string } = { draftIssueId };
+  if (changes.title !== undefined) input.title = changes.title;
+  if (changes.description !== undefined) input.body = changes.description;
+
+  await gql(UPDATE_DRAFT, { input });
 }
 
 export async function deleteActivity(

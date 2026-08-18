@@ -113,6 +113,11 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
       description: z.string().optional().describe('New description/body'),
     },
     async ({ projectNumber, itemId, title, description }) => {
+      // Unset fields are omitted from the mutation (never sent as null — that
+      // would clear the field), so at least one must be present.
+      if (title === undefined && description === undefined) {
+        throw new Error('Provide at least one of title or description to update');
+      }
       await updateActivity(gql, projectNumber, itemId, { title, description });
       return {
         content: [{ type: 'text' as const, text: `Updated item \`${itemId}\`.` }],

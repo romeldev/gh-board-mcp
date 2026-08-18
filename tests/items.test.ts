@@ -229,10 +229,33 @@ describe('updateActivity', () => {
 
     const updateCall = gql.calls.find((c) => /updateProjectV2DraftIssue/.test(c.query));
     expect(updateCall?.vars).toEqual({
-      draftIssueId: 'draft_1',
-      title: 'Design UI',
-      body: 'new notes',
+      input: {
+        draftIssueId: 'draft_1',
+        title: 'Design UI',
+        body: 'new notes',
+      },
     });
+  });
+
+  it('omits unset fields so a single-field edit does not clear the other', async () => {
+    const gql = createMockGql([
+      { match: /projectV2\(number/, respond: () => ({ viewer: { projectV2: { id: 'PVT_12', number: 12, title: 'Alpha' } } }) },
+      {
+        match: /node\(id/,
+        respond: () => ({ node: { content: { id: 'draft_1' } } }),
+      },
+      {
+        match: /updateProjectV2DraftIssue/,
+        respond: () => ({ updateProjectV2DraftIssue: { draftIssue: { id: 'draft_1', title: 'Design UI', body: 'notes' } } }),
+      },
+    ]);
+
+    // title-only update: the input must NOT carry a body key (null clears it live)
+    await updateActivity(gql, 12, 'item_1', { title: 'Design UI' });
+
+    const updateCall = gql.calls.find((c) => /updateProjectV2DraftIssue/.test(c.query));
+    expect(updateCall?.vars).toEqual({ input: { draftIssueId: 'draft_1', title: 'Design UI' } });
+    expect(updateCall?.vars.input).not.toHaveProperty('body');
   });
 });
 
