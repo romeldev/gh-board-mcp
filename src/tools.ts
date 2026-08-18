@@ -109,7 +109,7 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
     {
       projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
       itemId: z.string().describe('Item id of the activity (from list_activities)'),
-      title: z.string().trim().optional().describe('New title'),
+      title: z.string().trim().min(1).optional().describe('New title'),
       description: z.string().optional().describe('New description/body'),
     },
     async ({ projectNumber, itemId, title, description }) => {
