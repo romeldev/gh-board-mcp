@@ -1,6 +1,6 @@
 {
   "name": "gh-board-mcp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MCP server for managing GitHub Projects v2 as a personal kanban board",
   "repository": {
     "type": "git",
