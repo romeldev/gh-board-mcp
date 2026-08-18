@@ -1,7 +1,15 @@
 {
   "name": "gh-board-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for managing GitHub Projects v2 as a personal kanban board",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romeldev/gh-board-mcp.git"
+  },
+  "homepage": "https://github.com/romeldev/gh-board-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/romeldev/gh-board-mcp/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "bin": {
