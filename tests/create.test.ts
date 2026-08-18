@@ -51,6 +51,20 @@ describe('createProject', () => {
           createProjectV2Field: { projectV2Field: PRIORITY_FIELD },
         }),
       },
+      {
+        match: /views\(first/,
+        respond: () => ({
+          node: { views: { nodes: [{ id: 'v_1', layout: 'TABLE_LAYOUT' }] } },
+        }),
+      },
+      {
+        match: /updateProjectV2View/,
+        respond: () => ({
+          updateProjectV2View: {
+            projectV2View: { id: 'v_1', name: 'View 1', layout: 'BOARD_LAYOUT' },
+          },
+        }),
+      },
     ]);
 
     const project = await createProject(gql, 'Gamma');
@@ -72,6 +86,10 @@ describe('createProject', () => {
     });
     const createCall = gql.calls.find((c) => /createProjectV2\(/.test(c.query));
     expect(createCall?.vars).toEqual({ ownerId: 'U_1', title: 'Gamma' });
+    // Default view is flipped to a board (kanban) layout.
+    const viewCall = gql.calls.find((c) => /updateProjectV2View/.test(c.query));
+    expect(viewCall?.vars).toEqual({ viewId: 'v_1' });
+    expect(viewCall?.query).toContain('layout: BOARD_LAYOUT');
   });
 
   it('does not create Priority field when it already exists', async () => {
@@ -91,10 +109,55 @@ describe('createProject', () => {
           node: { fields: { nodes: [{ id: 'f_status', name: 'Status', options: [] }, PRIORITY_FIELD] } },
         }),
       },
+      {
+        match: /views\(first/,
+        respond: () => ({
+          node: { views: { nodes: [{ id: 'v_1', layout: 'TABLE_LAYOUT' }] } },
+        }),
+      },
+      {
+        match: /updateProjectV2View/,
+        respond: () => ({
+          updateProjectV2View: {
+            projectV2View: { id: 'v_1', name: 'View 1', layout: 'BOARD_LAYOUT' },
+          },
+        }),
+      },
     ]);
 
     await createProject(gql, 'Delta');
 
     expect(gql.calls.some((c) => /createProjectV2Field/.test(c.query))).toBe(false);
+    expect(gql.calls.some((c) => /updateProjectV2View/.test(c.query))).toBe(true);
+  });
+
+  it('does not set board layout when the view is already a board', async () => {
+    const gql = createMockGql([
+      { match: /viewer\s*\{[^}]*id/, respond: () => ({ viewer: { id: 'U_1' } }) },
+      {
+        match: /createProjectV2/,
+        respond: () => ({
+          createProjectV2: {
+            projectV2: { id: 'PVT_5', number: 17, title: 'Epsilon' },
+          },
+        }),
+      },
+      {
+        match: /fields/,
+        respond: () => ({
+          node: { fields: { nodes: [{ id: 'f_status', name: 'Status', options: [] }, PRIORITY_FIELD] } },
+        }),
+      },
+      {
+        match: /views\(first/,
+        respond: () => ({
+          node: { views: { nodes: [{ id: 'v_1', layout: 'BOARD_LAYOUT' }] } },
+        }),
+      },
+    ]);
+
+    await createProject(gql, 'Epsilon');
+
+    expect(gql.calls.some((c) => /updateProjectV2View/.test(c.query))).toBe(false);
   });
 });

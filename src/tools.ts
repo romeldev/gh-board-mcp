@@ -31,7 +31,7 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
 
   server.tool(
     'create_project',
-    'Create a new GitHub Project v2 board with default Status (Todo/In Progress/Done) and Priority (Urgent/High/Medium/Low) fields.',
+    'Create a new GitHub Project v2 board with default Status (Todo/In Progress/Done), Priority (Urgent/High/Medium/Low), and a board (kanban) view.',
     {
       name: z.string().min(1).describe('Name of the new board/project'),
     },

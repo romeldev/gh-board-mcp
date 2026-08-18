@@ -59,6 +59,33 @@ const CREATE_PRIORITY_FIELD = `
   }
 `;
 
+const GET_PROJECT_VIEWS = `
+  query GetProjectViews($projectId: ID!) {
+    node(id: $projectId) {
+      ... on ProjectV2 {
+        views(first: 5) {
+          nodes {
+            id
+            layout
+          }
+        }
+      }
+    }
+  }
+`;
+
+const SET_BOARD_LAYOUT = `
+  mutation SetBoardLayout($viewId: ID!) {
+    updateProjectV2View(input: { viewId: $viewId, layout: BOARD_LAYOUT }) {
+      projectV2View {
+        id
+        name
+        layout
+      }
+    }
+  }
+`;
+
 // createProjectV2Field requires each single-select option to carry a
 // non-null color (ProjectV2SingleSelectFieldOptionColor) and description —
 // a `{ name }`-only option is rejected by the live API.
@@ -85,6 +112,26 @@ async function ensurePriorityField(gql: GraphqlClient, projectId: string): Promi
   });
 }
 
+// The API creates a fresh project with a single table-layout view; flip it to
+// a board (kanban) view so the board opens as a kanban. Views can lag project
+// creation (eventual consistency), so retry briefly before giving up.
+const VIEW_RETRIES = 5;
+const VIEW_RETRY_MS = 600;
+
+async function ensureBoardView(gql: GraphqlClient, projectId: string): Promise<void> {
+  for (let attempt = 0; attempt < VIEW_RETRIES; attempt++) {
+    const data = await gql(GET_PROJECT_VIEWS, { projectId });
+    const view = data.node?.views?.nodes?.[0];
+    if (view) {
+      if (view.layout !== 'BOARD_LAYOUT') {
+        await gql(SET_BOARD_LAYOUT, { viewId: view.id });
+      }
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, VIEW_RETRY_MS));
+  }
+}
+
 export async function createProject(gql: GraphqlClient, name: string): Promise<Project> {
   const viewerData = await gql(GET_VIEWER_ID);
   const ownerId: string = viewerData.viewer.id;
@@ -93,5 +140,6 @@ export async function createProject(gql: GraphqlClient, name: string): Promise<P
   const project: Project = data.createProjectV2.projectV2;
 
   await ensurePriorityField(gql, project.id);
+  await ensureBoardView(gql, project.id);
   return project;
 }

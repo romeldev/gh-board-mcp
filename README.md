@@ -24,7 +24,7 @@ claude mcp add gh-board-mcp -- env GITHUB_TOKEN=ghp_xxx npx gh-board-mcp
 | Tool | Description |
 |------|-------------|
 | `list_projects` | List your GitHub Projects v2 boards |
-| `create_project` | Create a new board (default Status + Priority fields) |
+| `create_project` | Create a new board (default Status + Priority fields, opens with a board view) |
 | `list_activities` | List activities (draft items), filter by status/priority |
 | `create_activity` | Create an activity with optional status/priority |
 | `move_activity` | Move an activity to another status (and set priority) |
@@ -33,7 +33,7 @@ claude mcp add gh-board-mcp -- env GITHUB_TOKEN=ghp_xxx npx gh-board-mcp
 
 ## Status & Priority
 
-- `create_project` creates a new board with Status = **Todo / In Progress / Done** and Priority = **Urgent / High / Medium / Low**.
+- `create_project` creates a new board with Status = **Todo / In Progress / Done**, Priority = **Urgent / High / Medium / Low**, and a board (kanban) view as its default view.
 - Boards created from a GitHub template keep their own Status/Priority options — pass values that exist on the board. `create_activity`, `move_activity`, and `list_activities` report the valid options when given an unknown value.
 - Custom columns are not supported via the API (configure them in the GitHub UI).
 
