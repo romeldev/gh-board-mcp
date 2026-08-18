@@ -68,7 +68,7 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
     'Create a new activity (draft item) in a board. Optionally set an initial status and priority.',
     {
       projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
-      title: z.string().min(1).describe('Title of the activity'),
+      title: z.string().trim().min(1).describe('Title of the activity'),
       description: z.string().optional().describe('Notes/body for the activity'),
       status: z.string().optional().describe(`Initial status. ${OPTIONS_HINT}`),
       priority: z.string().optional().describe(`Initial priority. ${OPTIONS_HINT}`),
@@ -109,7 +109,7 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
     {
       projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
       itemId: z.string().describe('Item id of the activity (from list_activities)'),
-      title: z.string().optional().describe('New title'),
+      title: z.string().trim().optional().describe('New title'),
       description: z.string().optional().describe('New description/body'),
     },
     async ({ projectNumber, itemId, title, description }) => {

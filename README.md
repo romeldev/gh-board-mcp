@@ -33,9 +33,15 @@ claude mcp add gh-board-mcp -- env GITHUB_TOKEN=ghp_xxx npx gh-board-mcp
 
 ## Status & Priority
 
-- Status values are GitHub's built-in defaults: **Todo, In Progress, Done**
-- Priority values: **Urgent, High, Medium, Low**
+- `create_project` creates a new board with Status = **Todo / In Progress / Done** and Priority = **Urgent / High / Medium / Low**.
+- Boards created from a GitHub template keep their own Status/Priority options — pass values that exist on the board. `create_activity`, `move_activity`, and `list_activities` report the valid options when given an unknown value.
 - Custom columns are not supported via the API (configure them in the GitHub UI).
+
+## Notes
+
+- **Read cap:** `list_activities` and `list_projects` read up to 100 items / projects in one call; larger boards are truncated.
+- **Eventual consistency:** GitHub Projects v2 writes can take a moment to appear in reads — a `list_activities` immediately after `create_activity` may briefly miss the new item.
+- **Create is not atomic:** `create_activity` validates the status/priority options before creating, so a bad option leaves nothing behind; a transient network error mid-create can still leave a draft without its field values.
 
 ## Development
 

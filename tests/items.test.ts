@@ -179,6 +179,17 @@ describe('createActivity', () => {
     // status + priority = 2 field updates
     expect(gql.calls.filter((c) => /updateProjectV2ItemFieldValue/.test(c.query))).toHaveLength(2);
   });
+
+  it('rejects an unknown status WITHOUT creating a draft (no orphaned item)', async () => {
+    const gql = createMockGql([
+      { match: /projectV2\(number/, respond: () => ({ viewer: { projectV2: { id: 'PVT_12', number: 12, title: 'Alpha' } } }) },
+      { match: /fields/, respond: FIELDS },
+    ]);
+
+    await expect(createActivity(gql, 12, { title: 'Design UX', status: 'Bogus' })).rejects.toThrow(/Unknown option/);
+
+    expect(gql.calls.some((c) => /addProjectV2DraftIssue/.test(c.query))).toBe(false);
+  });
 });
 
 describe('moveActivity', () => {

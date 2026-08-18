@@ -11,7 +11,7 @@ export function createMockGql(routes: Route[]): GraphqlClient & {
   const calls: Array<{ query: string; vars?: Record<string, unknown> }> = [];
   const fn = (async (query: string, vars?: Record<string, unknown>) => {
     calls.push({ query, vars });
-    const route = routes.find((r) => r.match.test(query));
+    const route = routes.find((r) => new RegExp(r.match.source, r.match.flags).test(query));
     if (!route) {
       throw new Error(`No mock route for query: ${query.slice(0, 120)}`);
     }
