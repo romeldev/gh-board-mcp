@@ -15,7 +15,7 @@ function setup(respond: () => unknown) {
 }
 
 describe('registerTools', () => {
-  it('registers the 7 tools', () => {
+  it('registers the 9 tools', () => {
     const { server } = setup(() => ({}));
     // McpServer doesn't expose a list; assert via tool listing from a connected client
     return (async () => {
@@ -25,12 +25,14 @@ describe('registerTools', () => {
       await client.connect(clientTransport);
       const result = await client.listTools();
       expect(result.tools.map((t) => t.name).sort()).toEqual([
+        'archive_activity',
         'create_activity',
         'create_project',
         'delete_activity',
         'list_activities',
         'list_projects',
         'move_activity',
+        'unarchive_activity',
         'update_activity',
       ]);
       await client.close();

@@ -9,6 +9,8 @@ import {
   moveActivity,
   updateActivity,
   deleteActivity,
+  archiveActivity,
+  unarchiveActivity,
 } from './projects/items.js';
 
 const DEFAULT_STATUSES = 'Todo, In Progress, Done';
@@ -127,7 +129,7 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
 
   server.tool(
     'delete_activity',
-    'Delete an activity (draft item) from a board.',
+    'Delete an activity (draft item) from a board. Permanent — cannot be restored.',
     {
       projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
       itemId: z.string().describe('Item id of the activity (from list_activities)'),
@@ -136,6 +138,36 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
       await deleteActivity(gql, projectNumber, itemId);
       return {
         content: [{ type: 'text' as const, text: `Deleted item \`${itemId}\`.` }],
+      };
+    },
+  );
+
+  server.tool(
+    'archive_activity',
+    'Archive an activity (draft item). Archived items are hidden from list_activities but still exist and can be restored with unarchive_activity.',
+    {
+      projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
+      itemId: z.string().describe('Item id of the activity (from list_activities)'),
+    },
+    async ({ projectNumber, itemId }) => {
+      await archiveActivity(gql, projectNumber, itemId);
+      return {
+        content: [{ type: 'text' as const, text: `Archived item \`${itemId}\`.` }],
+      };
+    },
+  );
+
+  server.tool(
+    'unarchive_activity',
+    'Restore an archived activity (draft item) back to the board.',
+    {
+      projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
+      itemId: z.string().describe('Item id of the activity'),
+    },
+    async ({ projectNumber, itemId }) => {
+      await unarchiveActivity(gql, projectNumber, itemId);
+      return {
+        content: [{ type: 'text' as const, text: `Unarchived item \`${itemId}\`.` }],
       };
     },
   );

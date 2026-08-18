@@ -29,7 +29,9 @@ claude mcp add gh-board-mcp -- env GITHUB_TOKEN=ghp_xxx npx gh-board-mcp
 | `create_activity` | Create an activity with optional status/priority |
 | `move_activity` | Move an activity to another status (and set priority) |
 | `update_activity` | Edit an activity's title/description |
-| `delete_activity` | Delete an activity |
+| `delete_activity` | Delete an activity (permanent) |
+| `archive_activity` | Archive an activity (hidden from lists, reversible) |
+| `unarchive_activity` | Restore an archived activity |
 
 ## Status & Priority
 
@@ -40,6 +42,7 @@ claude mcp add gh-board-mcp -- env GITHUB_TOKEN=ghp_xxx npx gh-board-mcp
 ## Notes
 
 - **Read cap:** `list_activities` and `list_projects` read up to 100 items / projects in one call; larger boards are truncated.
+- **Archive ≠ delete:** `archive_activity` hides an item from `list_activities` but keeps it (restorable via `unarchive_activity`); `delete_activity` removes it permanently.
 - **Eventual consistency:** GitHub Projects v2 writes can take a moment to appear in reads — a `list_activities` immediately after `create_activity` may briefly miss the new item.
 - **Create is not atomic:** `create_activity` validates the status/priority options before creating, so a bad option leaves nothing behind; a transient network error mid-create can still leave a draft without its field values.
 

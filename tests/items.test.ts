@@ -6,6 +6,8 @@ import {
   moveActivity,
   updateActivity,
   deleteActivity,
+  archiveActivity,
+  unarchiveActivity,
 } from '../src/projects/items.js';
 import { createMockGql } from './helpers.js';
 
@@ -284,5 +286,39 @@ describe('deleteActivity', () => {
 
     const deleteCall = gql.calls.find((c) => /deleteProjectV2Item/.test(c.query));
     expect(deleteCall?.vars).toEqual({ projectId: 'PVT_12', itemId: 'item_1' });
+  });
+});
+
+describe('archiveActivity', () => {
+  it('archives the item via archiveProjectV2Item', async () => {
+    const gql = createMockGql([
+      { match: /projectV2\(number/, respond: () => ({ viewer: { projectV2: { id: 'PVT_12', number: 12, title: 'Alpha' } } }) },
+      {
+        match: /archiveProjectV2Item/,
+        respond: () => ({ archiveProjectV2Item: { item: { id: 'item_1' } } }),
+      },
+    ]);
+
+    await archiveActivity(gql, 12, 'item_1');
+
+    const archiveCall = gql.calls.find((c) => /archiveProjectV2Item/.test(c.query));
+    expect(archiveCall?.vars).toEqual({ projectId: 'PVT_12', itemId: 'item_1' });
+  });
+});
+
+describe('unarchiveActivity', () => {
+  it('restores the item via unarchiveProjectV2Item', async () => {
+    const gql = createMockGql([
+      { match: /projectV2\(number/, respond: () => ({ viewer: { projectV2: { id: 'PVT_12', number: 12, title: 'Alpha' } } }) },
+      {
+        match: /unarchiveProjectV2Item/,
+        respond: () => ({ unarchiveProjectV2Item: { item: { id: 'item_1' } } }),
+      },
+    ]);
+
+    await unarchiveActivity(gql, 12, 'item_1');
+
+    const unarchiveCall = gql.calls.find((c) => /unarchiveProjectV2Item/.test(c.query));
+    expect(unarchiveCall?.vars).toEqual({ projectId: 'PVT_12', itemId: 'item_1' });
   });
 });

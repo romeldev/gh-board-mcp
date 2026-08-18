@@ -260,3 +260,51 @@ export async function deleteActivity(
   const project = await resolveProject(gql, number);
   await gql(DELETE_ITEM, { projectId: project.id, itemId });
 }
+
+const ARCHIVE_ITEM = `
+  mutation ArchiveItem($projectId: ID!, $itemId: ID!) {
+    archiveProjectV2Item(input: { projectId: $projectId, itemId: $itemId }) {
+      item {
+        id
+      }
+    }
+  }
+`;
+
+const UNARCHIVE_ITEM = `
+  mutation UnarchiveItem($projectId: ID!, $itemId: ID!) {
+    unarchiveProjectV2Item(input: { projectId: $projectId, itemId: $itemId }) {
+      item {
+        id
+      }
+    }
+  }
+`;
+
+async function setItemArchived(
+  gql: GraphqlClient,
+  projectId: string,
+  itemId: string,
+  archived: boolean,
+): Promise<void> {
+  // Two separate API mutations (archiveProjectV2Item / unarchiveProjectV2Item).
+  await gql(archived ? ARCHIVE_ITEM : UNARCHIVE_ITEM, { projectId, itemId });
+}
+
+export async function archiveActivity(
+  gql: GraphqlClient,
+  number: number,
+  itemId: string,
+): Promise<void> {
+  const project = await resolveProject(gql, number);
+  await setItemArchived(gql, project.id, itemId, true);
+}
+
+export async function unarchiveActivity(
+  gql: GraphqlClient,
+  number: number,
+  itemId: string,
+): Promise<void> {
+  const project = await resolveProject(gql, number);
+  await setItemArchived(gql, project.id, itemId, false);
+}
