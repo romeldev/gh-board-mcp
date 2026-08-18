@@ -1,0 +1,179 @@
+import type { Activity, GraphqlClient, Project } from '../types.js';
+import { getFieldOptions, resolveOptionId } from './fields.js';
+
+const RESOLVE_PROJECT = `
+  query ResolveProject($number: Int!) {
+    viewer {
+      projectV2(number: $number) {
+        id
+        number
+        title
+      }
+    }
+  }
+`;
+
+const LIST_ITEMS = `
+  query ListItems($number: Int!) {
+    viewer {
+      projectV2(number: $number) {
+        id
+        items(first: 100) {
+          nodes {
+            id
+            content {
+              ... on DraftIssue {
+                id
+                title
+                body
+              }
+            }
+            status: fieldValueByName(name: "Status") {
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                name
+              }
+            }
+            priority: fieldValueByName(name: "Priority") {
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const CREATE_DRAFT = `
+  mutation CreateDraft($projectId: ID!, $title: String!, $body: String) {
+    createProjectV2DraftIssue(input: {
+      projectId: $projectId
+      title: $title
+      body: $body
+    }) {
+      projectItem {
+        id
+      }
+    }
+  }
+`;
+
+const UPDATE_FIELD_VALUE = `
+  mutation UpdateFieldValue($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+    updateProjectV2ItemFieldValue(input: {
+      projectId: $projectId
+      itemId: $itemId
+      fieldId: $fieldId
+      value: { singleSelectOptionId: $optionId }
+    }) {
+      projectV2Item {
+        id
+      }
+    }
+  }
+`;
+
+export async function resolveProject(
+  gql: GraphqlClient,
+  number: number,
+): Promise<Project> {
+  const data = await gql(RESOLVE_PROJECT, { number });
+  const project = data.viewer?.projectV2;
+  if (!project) {
+    throw new Error(`Project #${number} not found`);
+  }
+  return project;
+}
+
+interface ListItemNode {
+  id: string;
+  content: { id: string; title: string; body: string | null } | null;
+  status: { name: string } | null;
+  priority: { name: string } | null;
+}
+
+export async function listActivities(
+  gql: GraphqlClient,
+  number: number,
+  filter?: { status?: string; priority?: string },
+): Promise<Activity[]> {
+  const data = await gql(LIST_ITEMS, { number });
+  const nodes: ListItemNode[] = data.viewer?.projectV2?.items?.nodes ?? [];
+
+  const activities: Activity[] = nodes.map((n) => ({
+    itemId: n.id,
+    draftIssueId: n.content?.id ?? '',
+    title: n.content?.title ?? '',
+    body: n.content?.body ?? null,
+    status: n.status?.name ?? null,
+    priority: n.priority?.name ?? null,
+  }));
+
+  return activities.filter((a) => {
+    const statusOk = !filter?.status || a.status === filter.status;
+    const priorityOk = !filter?.priority || a.priority === filter.priority;
+    return statusOk && priorityOk;
+  });
+}
+
+export async function createActivity(
+  gql: GraphqlClient,
+  number: number,
+  input: { title: string; description?: string; status?: string; priority?: string },
+): Promise<Activity> {
+  const project = await resolveProject(gql, number);
+
+  const data = await gql(CREATE_DRAFT, {
+    projectId: project.id,
+    title: input.title,
+    body: input.description ?? null,
+  });
+  const itemId: string = data.createProjectV2DraftIssue.projectItem.id;
+
+  if (input.status) {
+    const statusField = await getFieldOptions(gql, project.id, 'Status');
+    await setFieldValue(gql, project.id, itemId, statusField.fieldId, resolveOptionId(statusField, input.status));
+  }
+  if (input.priority) {
+    const priorityField = await getFieldOptions(gql, project.id, 'Priority');
+    await setFieldValue(gql, project.id, itemId, priorityField.fieldId, resolveOptionId(priorityField, input.priority));
+  }
+
+  return {
+    itemId,
+    draftIssueId: '',
+    title: input.title,
+    body: input.description ?? null,
+    status: input.status ?? null,
+    priority: input.priority ?? null,
+  };
+}
+
+export async function moveActivity(
+  gql: GraphqlClient,
+  number: number,
+  itemId: string,
+  status: string,
+  priority?: string,
+): Promise<void> {
+  const project = await resolveProject(gql, number);
+
+  const statusField = await getFieldOptions(gql, project.id, 'Status');
+  await setFieldValue(gql, project.id, itemId, statusField.fieldId, resolveOptionId(statusField, status));
+
+  if (priority) {
+    const priorityField = await getFieldOptions(gql, project.id, 'Priority');
+    await setFieldValue(gql, project.id, itemId, priorityField.fieldId, resolveOptionId(priorityField, priority));
+  }
+}
+
+async function setFieldValue(
+  gql: GraphqlClient,
+  projectId: string,
+  itemId: string,
+  fieldId: string,
+  optionId: string,
+): Promise<void> {
+  await gql(UPDATE_FIELD_VALUE, { projectId, itemId, fieldId, optionId });
+}

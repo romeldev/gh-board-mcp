@@ -710,7 +710,7 @@ describe('resolveOptionId', () => {
   it('throws with valid options when value is unknown', () => {
     const field = { fieldId: 'f_status', options: { Todo: 'o_todo', Done: 'o_done' } };
     expect(() => resolveOptionId(field, 'Backlog')).toThrow(
-      /valid options are: Todo, Done/,
+      /Valid options are: Todo, Done/,
     );
   });
 });
