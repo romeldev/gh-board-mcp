@@ -961,8 +961,8 @@ describe('createActivity', () => {
       { match: /projectV2\(number/, respond: () => ({ viewer: { projectV2: { id: 'PVT_12', number: 12, title: 'Alpha' } } }) },
       { match: /fields/, respond: FIELDS },
       {
-        match: /createProjectV2DraftIssue/,
-        respond: () => ({ createProjectV2DraftIssue: { projectItem: { id: 'item_new' } } }),
+        match: /addProjectV2DraftIssue/,
+        respond: () => ({ addProjectV2DraftIssue: { projectItem: { id: 'item_new' } } }),
       },
       {
         match: /updateProjectV2ItemFieldValue/,
@@ -981,7 +981,7 @@ describe('createActivity', () => {
     expect(activity.status).toBe('In Progress');
     expect(activity.priority).toBe('High');
 
-    const draftCall = gql.calls.find((c) => /createProjectV2DraftIssue/.test(c.query));
+    const draftCall = gql.calls.find((c) => /addProjectV2DraftIssue/.test(c.query));
     expect(draftCall?.vars).toEqual({
       projectId: 'PVT_12',
       title: 'Design UX',
@@ -1081,7 +1081,7 @@ const LIST_ITEMS = `
 
 const CREATE_DRAFT = `
   mutation CreateDraft($projectId: ID!, $title: String!, $body: String) {
-    createProjectV2DraftIssue(input: {
+    addProjectV2DraftIssue(input: {
       projectId: $projectId
       title: $title
       body: $body
@@ -1163,7 +1163,7 @@ export async function createActivity(
     title: input.title,
     body: input.description ?? null,
   });
-  const itemId: string = data.createProjectV2DraftIssue.projectItem.id;
+  const itemId: string = data.addProjectV2DraftIssue.projectItem.id;
 
   if (input.status) {
     const statusField = await getFieldOptions(gql, project.id, 'Status');

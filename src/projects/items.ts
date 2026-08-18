@@ -1,4 +1,4 @@
-import type { Activity, GraphqlClient, Project } from '../types.js';
+import type { Activity, FieldOptions, GraphqlClient, Project } from '../types.js';
 import { getFieldOptions, resolveOptionId } from './fields.js';
 
 const RESOLVE_PROJECT = `
@@ -47,7 +47,7 @@ const LIST_ITEMS = `
 
 const CREATE_DRAFT = `
   mutation CreateDraft($projectId: ID!, $title: String!, $body: String) {
-    createProjectV2DraftIssue(input: {
+    addProjectV2DraftIssue(input: {
       projectId: $projectId
       title: $title
       body: $body
@@ -124,20 +124,33 @@ export async function createActivity(
 ): Promise<Activity> {
   const project = await resolveProject(gql, number);
 
+  // Resolve status/priority option ids BEFORE creating the draft so a bad option
+  // raises an error without leaving an orphaned draft item behind.
+  let statusField: FieldOptions | undefined;
+  let statusOptionId: string | undefined;
+  if (input.status) {
+    statusField = await getFieldOptions(gql, project.id, 'Status');
+    statusOptionId = resolveOptionId(statusField, input.status);
+  }
+  let priorityField: FieldOptions | undefined;
+  let priorityOptionId: string | undefined;
+  if (input.priority) {
+    priorityField = await getFieldOptions(gql, project.id, 'Priority');
+    priorityOptionId = resolveOptionId(priorityField, input.priority);
+  }
+
   const data = await gql(CREATE_DRAFT, {
     projectId: project.id,
     title: input.title,
     body: input.description ?? null,
   });
-  const itemId: string = data.createProjectV2DraftIssue.projectItem.id;
+  const itemId: string = data.addProjectV2DraftIssue.projectItem.id;
 
-  if (input.status) {
-    const statusField = await getFieldOptions(gql, project.id, 'Status');
-    await setFieldValue(gql, project.id, itemId, statusField.fieldId, resolveOptionId(statusField, input.status));
+  if (statusField && statusOptionId) {
+    await setFieldValue(gql, project.id, itemId, statusField.fieldId, statusOptionId);
   }
-  if (input.priority) {
-    const priorityField = await getFieldOptions(gql, project.id, 'Priority');
-    await setFieldValue(gql, project.id, itemId, priorityField.fieldId, resolveOptionId(priorityField, input.priority));
+  if (priorityField && priorityOptionId) {
+    await setFieldValue(gql, project.id, itemId, priorityField.fieldId, priorityOptionId);
   }
 
   return {

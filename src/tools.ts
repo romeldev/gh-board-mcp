@@ -13,6 +13,7 @@ import {
 
 const DEFAULT_STATUSES = 'Todo, In Progress, Done';
 const PRIORITIES = 'Urgent, High, Medium, Low';
+const OPTIONS_HINT = `Valid values depend on the project (new boards: ${DEFAULT_STATUSES} / ${PRIORITIES}).`;
 
 export function registerTools(server: McpServer, gql: GraphqlClient): void {
   server.tool(
@@ -44,11 +45,11 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
 
   server.tool(
     'list_activities',
-    `List activities (draft items) in a board. Filter by status (${DEFAULT_STATUSES}) and/or priority (${PRIORITIES}).`,
+    `List activities (draft items) in a board. Filter by status and/or priority. ${OPTIONS_HINT}`,
     {
       projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
-      status: z.string().optional().describe(`Status filter (${DEFAULT_STATUSES})`),
-      priority: z.string().optional().describe(`Priority filter (${PRIORITIES})`),
+      status: z.string().optional().describe(`Status filter. ${OPTIONS_HINT}`),
+      priority: z.string().optional().describe(`Priority filter. ${OPTIONS_HINT}`),
     },
     async ({ projectNumber, status, priority }) => {
       const activities = await listActivities(gql, projectNumber, { status, priority });
@@ -69,8 +70,8 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
       projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
       title: z.string().min(1).describe('Title of the activity'),
       description: z.string().optional().describe('Notes/body for the activity'),
-      status: z.string().optional().describe(`Initial status (${DEFAULT_STATUSES})`),
-      priority: z.string().optional().describe(`Initial priority (${PRIORITIES})`),
+      status: z.string().optional().describe(`Initial status. ${OPTIONS_HINT}`),
+      priority: z.string().optional().describe(`Initial priority. ${OPTIONS_HINT}`),
     },
     async ({ projectNumber, title, description, status, priority }) => {
       const activity = await createActivity(gql, projectNumber, {
@@ -87,12 +88,12 @@ export function registerTools(server: McpServer, gql: GraphqlClient): void {
 
   server.tool(
     'move_activity',
-    `Move an activity to a different status (${DEFAULT_STATUSES}) and optionally set its priority (${PRIORITIES}).`,
+    `Move an activity to a different status and optionally set its priority. ${OPTIONS_HINT}`,
     {
       projectNumber: z.number().int().positive().describe('Number of the GitHub Project board'),
       itemId: z.string().describe('Item id of the activity (from list_activities)'),
-      status: z.string().describe(`Target status (${DEFAULT_STATUSES})`),
-      priority: z.string().optional().describe(`Target priority (${PRIORITIES})`),
+      status: z.string().describe(`Target status. ${OPTIONS_HINT}`),
+      priority: z.string().optional().describe(`Target priority. ${OPTIONS_HINT}`),
     },
     async ({ projectNumber, itemId, status, priority }) => {
       await moveActivity(gql, projectNumber, itemId, status, priority);
