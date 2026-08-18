@@ -56,8 +56,20 @@ describe('createProject', () => {
     const project = await createProject(gql, 'Gamma');
 
     expect(project).toEqual({ id: 'PVT_3', number: 15, title: 'Gamma' });
-    // Priority field was created because it was missing
-    expect(gql.calls.some((c) => /createProjectV2Field/.test(c.query))).toBe(true);
+    // Priority field was created because it was missing — each option must
+    // carry a non-null color + description (live API requirement).
+    const fieldCall = gql.calls.find((c) => /createProjectV2Field/.test(c.query));
+    expect(fieldCall).toBeTruthy();
+    expect(fieldCall?.vars).toEqual({
+      projectId: 'PVT_3',
+      name: 'Priority',
+      options: [
+        { name: 'Urgent', color: 'RED', description: 'Blocks urgent work' },
+        { name: 'High', color: 'ORANGE', description: 'Important, near-term' },
+        { name: 'Medium', color: 'YELLOW', description: 'Planned work' },
+        { name: 'Low', color: 'GREEN', description: 'When time allows' },
+      ],
+    });
     const createCall = gql.calls.find((c) => /createProjectV2\(/.test(c.query));
     expect(createCall?.vars).toEqual({ ownerId: 'U_1', title: 'Gamma' });
   });

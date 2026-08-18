@@ -59,7 +59,15 @@ const CREATE_PRIORITY_FIELD = `
   }
 `;
 
-const PRIORITY_OPTIONS = ['Urgent', 'High', 'Medium', 'Low'].map((name) => ({ name }));
+// createProjectV2Field requires each single-select option to carry a
+// non-null color (ProjectV2SingleSelectFieldOptionColor) and description —
+// a `{ name }`-only option is rejected by the live API.
+const PRIORITY_OPTIONS = [
+  { name: 'Urgent', color: 'RED', description: 'Blocks urgent work' },
+  { name: 'High', color: 'ORANGE', description: 'Important, near-term' },
+  { name: 'Medium', color: 'YELLOW', description: 'Planned work' },
+  { name: 'Low', color: 'GREEN', description: 'When time allows' },
+];
 
 async function getFieldNames(gql: GraphqlClient, projectId: string): Promise<string[]> {
   const data = await gql(GET_FIELDS, { projectId });
