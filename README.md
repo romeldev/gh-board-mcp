@@ -9,15 +9,44 @@ MCP server for managing **GitHub Projects v2** as a personal kanban board. Creat
 
 ## Usage
 
-```bash
-GITHUB_TOKEN=ghp_xxx npx gh-board-mcp
-```
-
-Configure it in your MCP client (e.g. Claude Code):
+The package is published on npm — any MCP client can launch it with `npx gh-board-mcp`:
 
 ```bash
-claude mcp add gh-board-mcp -- env GITHUB_TOKEN=ghp_xxx npx gh-board-mcp
+GITHUB_TOKEN=ghp_xxx npx -y gh-board-mcp
 ```
+
+### Claude Code
+
+Register it globally (available in all projects):
+
+```bash
+claude mcp add gh-board-mcp -s user -e GITHUB_TOKEN=ghp_xxx -- npx -y gh-board-mcp
+```
+
+- `-s user` → global config (all projects); use `-s project` to scope it to a single repo.
+- `-e GITHUB_TOKEN=...` sets the token env var; the `--` separates the server command.
+- Verify with `claude mcp list` → `gh-board-mcp` should show `Connected`.
+
+### OpenCode
+
+Add it to the global config at `~/.config/opencode/opencode.json` (or `.jsonc`):
+
+```jsonc
+{
+  "mcp": {
+    "gh-board-mcp": {
+      "type": "local",
+      "command": ["npx", "-y", "gh-board-mcp"],
+      "enabled": true,
+      "environment": {
+        "GITHUB_TOKEN": "ghp_xxx"
+      }
+    }
+  }
+}
+```
+
+Verify with `opencode mcp list` → `gh-board-mcp` should show `connected`.
 
 ## Tools
 
